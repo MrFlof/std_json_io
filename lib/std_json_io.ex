@@ -27,21 +27,15 @@ defmodule StdJsonIo do
 
         script = Keyword.get(@options, :script)
 
-        children = [:poolboy.child_spec(@pool_name, pool_options, [script: script])]
-
-        files = Keyword.get(@options, :watch_files)
-
-        if files && length(files) > 0 do
-          Application.ensure_started(:fs, :permanent)
-
-          reloader_spec = worker(
-            StdJsonIo.Reloader,
-            [__MODULE__, Enum.map(files, &Path.expand/1)],
-            []
-          )
-
-          children = [reloader_spec | children]
+        reloader_spec = case Keyword.get(@options, :watch_files, []) do
+          [] -> []
+          files when is_list(files) ->
+            Application.ensure_started(:fs, :permanent)
+            files = Enum.map(files, &Path.expand/1)
+            [worker(StdJsonIo.Reloader, [__MODULE__, files], [])]
         end
+
+        children = [:poolboy.child_spec(@pool_name, pool_options, [script: script])] ++ reloader_spec
 
         supervise(children, strategy: :one_for_one, name: __MODULE__)
       end
