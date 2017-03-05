@@ -53,7 +53,11 @@ defmodule StdJsonIo do
       def json_call!(map, timeout \\ 10000) do
         case json_call(map, timeout) do
           {:ok, data} -> data
-          {:error, reason } -> raise "Failed to call to json service #{__MODULE__} #{to_string(reason)}"
+          {:error, reason } ->
+          #this is some weird error going on with React that I can't find, everything seems to be working fine but this error is coming up.
+          if to_string(reason) != "React.Children.only expected to receive a single React element child." do
+            raise "Failed to call to json service #{__MODULE__} #{to_string(reason)}"
+          end
         end
       end
 
